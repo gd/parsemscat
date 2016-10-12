@@ -1,0 +1,113 @@
+--
+-- ASN.1 Description for Microsoft Catalog Files
+--
+-- Copyright 2016 Andreas Schneider <asn@samba.org>
+-- Copyright 2016 Nikos Mavrogiannopoulos <nmav@redhat.com>
+--
+CATALOG {}
+DEFINITIONS IMPLICIT TAGS ::= -- assuming implicit tags, should try explicit too
+
+BEGIN
+
+SpcSerializedObject ::= SEQUENCE {
+    classID    OCTET STRING,
+    data       OCTET STRING
+}
+
+SpcString ::= CHOICE {
+    unicode    [0] IMPLICIT BMPString,
+    ascii      [1] IMPLICIT IA5String
+}
+
+SpcLink ::= CHOICE { --tags may not be accurate
+    url        [0]    IA5String,
+    moniker    [1]    SpcSerializedObject,
+    file       [2]    SpcString
+}
+
+-- CATALOG_NAME_VALUE
+CatalogNameValue ::= SEQUENCE { -- 180
+    name       BMPString,
+    flags      INTEGER, -- 10010001
+    value      OCTET STRING -- UTF-16-LE
+}
+
+-- CATALOG_MEMBER_INFO
+CatalogMemberInfo ::= SEQUENCE {
+    name       BMPString,
+    id         INTEGER -- 0200
+}
+
+SpcImageDataFile ::= SEQUENCE { -- 458
+    flags BIT STRING,
+    file SpcLink
+}
+
+AlgorithmIdentifier  ::=  SEQUENCE  { -- 500
+     algorithm   OBJECT IDENTIFIER,
+     parameters  [0]    ANY DEFINED BY algorithm OPTIONAL
+}
+
+DigestInfo ::= SEQUENCE { --struct498
+     digestAlgorithm AlgorithmIdentifier,
+     digest OCTET STRING
+}
+
+-- SPC_INDIRECT_DATA
+SpcAttributeTypeAndOptionalValue ::= AlgorithmIdentifier
+
+SpcIndirectDataContent ::= SEQUENCE {
+    data SpcAttributeTypeAndOptionalValue,
+    messageDigest DigestInfo
+}
+
+-- SPC_PE_IMAGE_DATA
+SpcPeImageFlags ::= BIT STRING {
+    includeResources            (0),
+    includeDebugInfo            (1),
+    includeImportAddressTable   (2)
+}
+
+SpcPeImageData ::= SEQUENCE {
+    flags SpcPeImageFlags DEFAULT includeResources,
+    file  SpcLink
+}
+
+-----------------------------------------------------------
+-- CERT_TRUST_LIST STRUCTURE
+-----------------------------------------------------------
+
+CatalogListId ::= SEQUENCE {
+    oid OBJECT IDENTIFIER
+}
+
+CatalogListMemberId ::= SEQUENCE {
+    oid OBJECT IDENTIFIER,
+    optional NULL
+}
+
+MemberAttribute ::= SEQUENCE {
+    oid OBJECT IDENTIFIER,
+    content SET OF ANY
+}
+
+CatalogListMember ::= SEQUENCE {
+    data OCTET STRING,
+    attributes SET OF MemberAttribute OPTIONAL
+}
+
+CatalogAttribute ::= SEQUENCE {
+    oid OBJECT IDENTIFIER,
+    encapsulated_data OCTET STRING -- encapsulates CatNameValue or SpcPeImageData
+}
+
+CertTrustList ::= SEQUENCE {
+    catalogListId CatalogListId,
+    unkownString OCTET STRING, -- 16 bytes MD5 hash?
+    trustUtcTime UTCTime,
+    catalogListMemberId CatalogListMemberId,
+    members SEQUENCE OF CatalogListMember,
+    attributes [0] EXPLICIT SEQUENCE OF CatalogAttribute OPTIONAL
+}
+
+END

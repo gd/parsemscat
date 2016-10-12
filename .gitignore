@@ -1,0 +1,8 @@
+*.a
+*.o
+.*
+*.swp
+*~
+obj
+cscope.*
+tags
